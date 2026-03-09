@@ -1,5 +1,7 @@
 package com.codingShuttle.SecurityApp.SecurityApplication.config;
 
+import com.codingShuttle.SecurityApp.SecurityApplication.filters.JwtFilter;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -15,22 +17,27 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
+@RequiredArgsConstructor
 public class WebSecurityConfig {
 
+    private final JwtFilter jwtFilter;
+
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception{
+    SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity
-                .authorizeHttpRequests(auth->auth
-                        .requestMatchers("/posts","/auth/**","/signup").permitAll()
-                        .requestMatchers("/posts/**").hasAnyRole("ADMIN")
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/posts", "/auth/**", "/signup").permitAll()
+//                        .requestMatchers("/posts/**").hasAnyRole("ADMIN")
                         .anyRequest().authenticated())
-                .csrf(csrfconfig->csrfconfig.disable())
-                .sessionManagement(sessionConfig->sessionConfig
+                .csrf(csrfconfig -> csrfconfig.disable())
+                .sessionManagement(sessionConfig -> sessionConfig
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .formLogin(Customizer.withDefaults());
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+        // .formLogin(Customizer.withDefaults());
 
         return httpSecurity.build();
     }
@@ -50,11 +57,8 @@ public class WebSecurityConfig {
 //    }
 
     @Bean
-    AuthenticationManager authenticationManager(AuthenticationConfiguration config)throws Exception{
+    AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
-    @Bean
-    PasswordEncoder passwordEncoder(){
-        return new BCryptPasswordEncoder();
-    }
 }
+
