@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html>
+<body>
+<h1>Login Success</h1>
+<script>
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get("token");
+    localStorage.setItem("token", token);
+</script>
+</body>
+</html>
