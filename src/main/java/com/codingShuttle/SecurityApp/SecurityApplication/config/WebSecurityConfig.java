@@ -1,5 +1,6 @@
 package com.codingShuttle.SecurityApp.SecurityApplication.config;
 
+import com.codingShuttle.SecurityApp.SecurityApplication.entities.enums.Permission;
 import com.codingShuttle.SecurityApp.SecurityApplication.entities.enums.Role;
 import com.codingShuttle.SecurityApp.SecurityApplication.filters.JwtFilter;
 import com.codingShuttle.SecurityApp.SecurityApplication.handlers.OAuth2SuccessHandler;
@@ -16,6 +17,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import static com.codingShuttle.SecurityApp.SecurityApplication.entities.enums.Permission.*;
 import static com.codingShuttle.SecurityApp.SecurityApplication.entities.enums.Role.ADMIN;
 import static com.codingShuttle.SecurityApp.SecurityApplication.entities.enums.Role.CREATOR;
 
@@ -36,6 +38,15 @@ public class WebSecurityConfig {
                         .requestMatchers(publicRoutes).permitAll()
                         .requestMatchers(HttpMethod.GET,"/posts/**").permitAll()
                         .requestMatchers(HttpMethod.POST,"/posts/**").hasAnyRole(ADMIN.name(),CREATOR.name())
+                        .requestMatchers(HttpMethod.POST,"/posts/**")
+                            .hasAnyAuthority(POST_CREATE.name())
+                        .requestMatchers(HttpMethod.GET,"/posts/**")
+                            .hasAnyAuthority(POST_VIEW.name())
+                        .requestMatchers(HttpMethod.PUT,"/posts/**").hasAuthority(USER_UPDATE.name())
+                        .requestMatchers(HttpMethod.DELETE,"/posts/**").hasAuthority(POST_DELETE.name())
+
+
+
 
                         .anyRequest().authenticated())
                 .csrf(csrfconfig -> csrfconfig.disable())
