@@ -6,6 +6,7 @@ import com.codingShuttle.SecurityApp.SecurityApplication.repositories.SessionEnt
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
@@ -59,9 +60,11 @@ public class JWTService {
 
         return Long.valueOf(claims.getSubject());
     }
+    @Transactional
     public void createorUpdateSession(User user,String token){
         sessionEntityRepository.findByUser(user)
                 .ifPresent(sessionEntity -> sessionEntityRepository.deleteByUser(user));
+        sessionEntityRepository.flush();
         SessionEntity sessionEntity=new SessionEntity();
         sessionEntity.setUser(user);
         sessionEntity.setToken(token);

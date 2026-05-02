@@ -4,6 +4,7 @@ import com.codingShuttle.SecurityApp.SecurityApplication.entities.enums.Permissi
 import com.codingShuttle.SecurityApp.SecurityApplication.entities.enums.Role;
 import com.codingShuttle.SecurityApp.SecurityApplication.filters.JwtFilter;
 import com.codingShuttle.SecurityApp.SecurityApplication.handlers.OAuth2SuccessHandler;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
 import org.springframework.context.annotation.Bean;
@@ -15,8 +16,12 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+import java.nio.charset.StandardCharsets;
 
 import static com.codingShuttle.SecurityApp.SecurityApplication.entities.enums.Permission.*;
 import static com.codingShuttle.SecurityApp.SecurityApplication.entities.enums.Role.ADMIN;
@@ -38,7 +43,7 @@ public class WebSecurityConfig {
         httpSecurity
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(publicRoutes).permitAll()
-                        .requestMatchers(HttpMethod.GET,"/posts/**").permitAll()
+                        .requestMatchers(HttpMethod.GET,"/posts/**").authenticated()
                         .requestMatchers(HttpMethod.POST,"/posts/**").hasAnyRole(ADMIN.name(),CREATOR.name())
                         .requestMatchers(HttpMethod.POST,"/posts/**")
                             .hasAnyAuthority(POST_CREATE.name())
@@ -49,6 +54,9 @@ public class WebSecurityConfig {
 
 
                         .anyRequest().authenticated())
+                .exceptionHandling(exceptionConfig -> exceptionConfig
+                        .authenticationEntryPoint(restAuthenticationEntryPoint())
+                        .accessDeniedHandler(restAccessDeniedHandler()))
                 .csrf(csrfconfig -> csrfconfig.disable())
                 .sessionManagement(sessionConfig -> sessionConfig
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -59,6 +67,32 @@ public class WebSecurityConfig {
         // .formLogin(Customizer.withDefaults());
 
         return httpSecurity.build();
+    }
+    @Bean
+    AuthenticationEntryPoint restAuthenticationEntryPoint() {
+        return (request, response, authException) -> {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+            response.getWriter().write("{\"status\":401,\"message\":\"" + safeMessage(authException) + "\"}");
+        };
+    }
+
+    @Bean
+    AccessDeniedHandler restAccessDeniedHandler() {
+        return (request, response, accessDeniedException) -> {
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            response.setContentType("application/json");
+            response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+            response.getWriter().write("{\"status\":403,\"message\":\"" + safeMessage(accessDeniedException) + "\"}");
+        };
+    }
+    private String safeMessage(Exception exception) {
+        String message = exception.getMessage();
+        if (message == null) {
+            return "Access denied";
+        }
+        return message.replace("\"", "'");
     }
 //    @Bean
 //    UserDetailsService myInMemoryUserDetailsService(){
