@@ -23,6 +23,9 @@ public class PostEntity {
 
     private String description;
 
+    @ManyToOne
+    private User author;
+
     @PrePersist
     void beforeSave(){}
 
